@@ -1,0 +1,25 @@
+# Your data: the database, its backups, the pairing code, the certificates.
+data/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.pixi/
+.DS_Store
+
+# Belt and braces: personal files, should one ever end up outside data/ —
+# databases and their backups, keys and certificates, the pairing code, and
+# exports (CSV, JSON), which hold students' names and marks.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.cer
+*.crt
+pairing-code
+*.csv
+*.json
+*.zip

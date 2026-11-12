@@ -1,0 +1,49 @@
+[project]
+name = "classbook"
+version = "0.1.0"
+description = "Classes, seating plans, participation marks and course planning: on the Mac, and offline on the phone"
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "fastapi>=0.115,<0.116",
+    "uvicorn[standard]>=0.34,<0.35",
+    "cryptography>=44,<47",
+    "jinja2>=3.1,<4",
+    "markdown>=3.7,<4",
+    "pymdown-extensions>=10.14,<11",
+    "playwright>=1.49,<2",
+    "python-multipart>=0.0.20",
+    "nh3>=0.2.18,<1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "httpx>=0.27"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+# `pixi install` recreates the environment from pixi.lock
+[tool.pixi.workspace]
+name = "classbook"
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "osx-64", "linux-64", "win-64"]
+
+[tool.pixi.dependencies]
+python = "3.12.*"
+pytest = ">=8"
+httpx = ">=0.27"
+
+# The project itself is installed editable, which pulls in [project.dependencies]
+# so the dependency list above is the single source of truth.
+[tool.pixi.pypi-dependencies]
+classbook = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+# One-off: fetch the headless Chromium used for the syllabus and day-sheet PDFs.
+postinstall = "playwright install chromium"
+start = "python -m app.serve"
+test = "pytest -q"

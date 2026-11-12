@@ -1,0 +1,55 @@
+# ---------------------------------------------------------------------------
+# NO personal data, quiz data or classroom data belongs in this repository.
+# ---------------------------------------------------------------------------
+
+# Runtime data of all apps (databases, backups, certificates, pairing codes)
+data/
+**/data/
+
+# Quiz fixtures / Moodle exports (real quiz content)
+quizmaster/tests/data/
+*.xml
+!**/static/**/*.xml
+
+# Databases and their companions
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Keys, certificates, secrets
+*.pem
+*.key
+*.cer
+*.crt
+*.p12
+*.pfx
+pairing-code
+.env
+.env.*
+
+# Exports (may contain student names and marks)
+*.csv
+*.xlsx
+*.xls
+*.pdf
+*.zip
+*.json
+!**/package.json
+!**/*.webmanifest
+
+# Local git identity (user, GitHub account); stays on this machine only
+.gitconfig
+
+# Local backup of classbook's former standalone git history
+.classbook-git-backup/
+
+# Tooling / OS
+.pixi/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.DS_Store

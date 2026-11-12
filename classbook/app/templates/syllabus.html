@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ course.name }} — {{ course.class_name }}</title>
+<link rel="stylesheet" href="{{ asset_base }}/vendor/katex/katex.min.css">
+<style>
+  :root { --ink:#1a1a1a; --muted:#666; --line:#d8d8d8; --accent:{{ course.color }}; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Charter","Georgia","Times New Roman",serif;
+    color: var(--ink); font-size: 10.5pt; line-height: 1.45; margin: 0;
+  }
+  h1 { font-size: 19pt; margin: 0 0 2mm; letter-spacing: -0.01em; }
+  h2 { font-size: 12pt; margin: 8mm 0 3mm; padding-bottom: 1mm;
+       border-bottom: 1.5px solid var(--accent); }
+  .sub { color: var(--muted); font-size: 10pt; margin: 0; }
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 4mm; margin-bottom: 5mm; }
+  .meta { display: flex; flex-wrap: wrap; gap: 2mm 8mm; margin-top: 3mm; font-size: 9.5pt; }
+  .meta div { color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead { display: table-header-group; }
+  th { text-align: left; font-size: 8.5pt; text-transform: uppercase;
+       letter-spacing: 0.06em; color: var(--muted); font-weight: 600;
+       border-bottom: 1px solid var(--accent); padding: 0 2mm 1.5mm; }
+  td { padding: 1.8mm 2mm; border-bottom: 1px solid var(--line);
+       vertical-align: top; }
+  tr { page-break-inside: avoid; }
+  .c-num   { width: 9mm;  color: var(--muted); font-variant-numeric: tabular-nums; }
+  .c-date  { width: 36mm; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .c-topic { font-weight: 600; }
+  .free td { color: #999; font-style: italic; }
+  .badge { display: inline-block; font-size: 7.5pt; text-transform: uppercase;
+           letter-spacing: 0.05em; padding: 0.3mm 1.5mm; border-radius: 2px;
+           border: 1px solid var(--accent); color: var(--accent);
+           margin-left: 2mm; font-family: system-ui, sans-serif; font-weight: 600; }
+  .inline-body { font-weight: 400; font-size: 9.5pt; color: #333; margin-top: 1mm; }
+  .inline-body p { margin: 0.5mm 0; }
+
+  .lesson { page-break-inside: avoid; margin: 0 0 5mm; padding-left: 4mm;
+            border-left: 2px solid var(--line); }
+  .lesson h3 { font-size: 11pt; margin: 0 0 1mm; }
+  .lesson .when { font-size: 9pt; color: var(--muted); margin: 0 0 2mm;
+                  font-variant-numeric: tabular-nums; }
+  .lesson-body p:first-child { margin-top: 0; }
+  .lesson-body :is(p,ul,ol) { margin: 1.5mm 0; }
+  .lesson-body code { font-family: "SF Mono",Menlo,monospace; font-size: 9pt;
+                      background: #f4f4f4; padding: 0 1mm; border-radius: 2px; }
+  .lesson-body pre { background: #f6f6f6; padding: 2mm 3mm; border-radius: 3px;
+                     overflow-x: auto; font-size: 8.5pt; }
+  .lesson-body blockquote { margin: 2mm 0; padding-left: 3mm;
+                            border-left: 2px solid var(--line); color: #555; }
+  .lesson-body table { font-size: 9pt; margin: 2mm 0; }
+  .lesson-body th, .lesson-body td { border: 1px solid var(--line); padding: 1mm 2mm; }
+  .lesson-body img { max-width: 100%; }
+  footer { margin-top: 8mm; padding-top: 2mm; border-top: 1px solid var(--line);
+           font-size: 8.5pt; color: var(--muted); }
+  .topic-line + .topic-line { margin-top: 1mm; padding-top: 1mm;
+                             border-top: 1px dotted var(--line); }
+  .sub-topic { font-weight: 600; font-size: 10pt; margin: 2mm 0 0.5mm; }
+  .unscheduled { margin: 0; padding-left: 5mm; font-size: 10pt; }
+  .unscheduled li { margin: 0.5mm 0; }
+  .hint-free { font-size: 9pt; color: var(--muted); font-style: italic; margin: 4mm 0 0; }
+  .warn { background: #fff6e5; border: 1px solid #e6c98a; padding: 2mm 3mm;
+          border-radius: 3px; font-size: 9pt; margin: 3mm 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>{{ course.name }}</h1>
+  <p class="sub">
+    {% if course.class_name %}{{ course.class_name }} &middot; {% endif %}{{ year.name }}
+  </p>
+  <div class="meta">
+    {% if slots %}
+    <div><b>Schedule</b>
+      {% for s in slots %}{{ s.weekday_name }}{% if s.start_time %} {{ s.start_time }}{% endif %}
+        ({{ s.hours }}h){% if not loop.last %}, {% endif %}{% endfor %}
+    </div>
+    {% endif %}
+    <div><b>Units</b> {{ summary.units_total }} h over {{ summary.teaching_days }} days</div>
+    {% if course.teacher %}<div><b>Teacher</b> {{ course.teacher }}</div>{% endif %}
+    {% if course.room %}<div><b>Room</b> {{ course.room }}</div>{% endif %}
+  </div>
+</header>
+
+
+
+{% if notes_html %}
+<h2>About this course</h2>
+<div class="lesson-body">{{ notes_html|safe }}</div>
+{% endif %}
+
+<h2>Overview</h2>
+<table>
+  <thead>
+    <tr>
+      <th class="c-num">#</th>
+      <th class="c-date">Date</th>
+      <th>Topic</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr class="{{ 'free' if r.empty else '' }}">
+      <td class="c-num">{{ r.number }}</td>
+      <td class="c-date">{{ r.date_label }}{% if r.time_label %}<br><span style="color:#888">{{ r.time_label }}</span>{% endif %}</td>
+      <td class="c-topic">
+        {% if r.empty %}not yet assigned{% else %}
+          {%- for tp in r.topics %}
+            <div class="topic-line">{{ tp.title }}
+              {%- if not detailed and tp.body_html %}<div class="inline-body">{{ tp.body_html|safe }}</div>{% endif %}
+            </div>
+          {%- endfor %}
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if detailed %}
+{% set detail_rows = rows | rejectattr('empty') | selectattr('topics') | list %}
+{% set ns = namespace(any=false) %}
+{% for r in detail_rows %}{% for tp in r.topics %}{% if tp.body_html %}{% set ns.any = true %}{% endif %}{% endfor %}{% endfor %}
+{% if ns.any %}
+<h2>Detailed content</h2>
+{% for r in detail_rows %}
+  {%- if r.topics | selectattr('body_html') | list %}
+<div class="lesson">
+  <h3>{{ r.number }}. {% for tp in r.topics %}{% if not loop.first %} &middot; {% endif %}{{ tp.title }}{% endfor %}</h3>
+  <p class="when">{{ r.date_label }}{% if r.time_label %} &middot; {{ r.time_label }}{% endif %}</p>
+  {%- for tp in r.topics if tp.body_html %}
+  {%- if r.topics | length > 1 %}<p class="sub-topic">{{ tp.title }}</p>{% endif %}
+  <div class="lesson-body">{{ tp.body_html|safe }}</div>
+  {%- endfor %}
+</div>
+  {%- endif %}
+{% endfor %}
+{% endif %}
+{% endif %}
+
+{% if unscheduled %}
+<h2>Not scheduled yet</h2>
+<ul class="unscheduled">
+{% for tp in unscheduled %}
+  <li>{{ tp.title }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if free_units %}
+<p class="hint-free">{{ free_units }} teaching hour(s) of this course have no topic assigned yet.</p>
+{% endif %}
+
+<footer>{{ course.name }}{% if course.class_name %} — {{ course.class_name }}{% endif %}
+  &middot; {{ year.name }} &middot; generated {{ generated }}</footer>
+
+<script src="{{ asset_base }}/vendor/katex/katex.min.js"></script>
+<script src="{{ asset_base }}/vendor/katex/auto-render.min.js"></script>
+<script>
+  (function () {
+    function done() { window.__mathReady = true; }
+    try {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "\\[", right: "\\]", display: true },
+          { left: "\\(", right: "\\)", display: false }
+        ],
+        throwOnError: false
+      });
+    } catch (e) { /* KaTeX missing: leave the raw TeX visible */ }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(done);
+    } else { done(); }
+  })();
+</script>
+</body>
+</html>

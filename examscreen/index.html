@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>examscreen</title>
+<style>
+  :root {
+    --bg: #0f1115;
+    --fg: #f2f2f2;
+    --muted: #8b93a1;
+    --card: #1a1d24;
+    --border: #2a2f3a;
+    --accent: #4ea1ff;
+    --warn: #ffb020;
+    --danger: #ff4d4d;
+    --ok: #3ccf7a;
+  }
+  body.light {
+    --bg: #ffffff;
+    --fg: #111418;
+    --muted: #5d6573;
+    --card: #f2f4f7;
+    --border: #d9dde3;
+    --accent: #0a66d9;
+    --warn: #c77800;
+    --danger: #d62020;
+    --ok: #138a4a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    overflow: hidden;
+  }
+
+  /* ---------- Screen ---------- */
+  #screen {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 3vh 4vw;
+    gap: 2vh;
+    transition: margin-right .2s;
+  }
+  body.editing #screen { margin-right: 380px; }
+
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 2vw; }
+  #d-title { font-size: clamp(24px, 4.2vw, 80px); font-weight: 700; line-height: 1.1; }
+  #d-subtitle { font-size: clamp(14px, 1.8vw, 36px); color: var(--muted); margin-top: .4vh; }
+  #d-clock { font-size: clamp(18px, 2.6vw, 52px); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  #timer-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 0; }
+  #d-timer {
+    font-size: var(--timer-size, 22vw);
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    transition: color .3s;
+  }
+  #d-timer.warn { color: var(--warn); }
+  #d-timer.danger { color: var(--danger); }
+  #d-timer.over { color: var(--danger); animation: blink 1s steps(1) infinite; }
+  #d-timer.idle { color: var(--muted); }
+  @keyframes blink { 50% { opacity: .25; } }
+
+  #progress { width: 70%; height: 1.2vh; min-height: 6px; background: var(--card); border-radius: 99px; overflow: hidden; margin-top: 2vh; }
+  #progress > div { height: 100%; width: 100%; background: var(--accent); transition: width .5s linear, background .3s; }
+  #d-status { margin-top: 1.5vh; font-size: clamp(14px, 1.8vw, 34px); color: var(--muted); min-height: 1.3em; }
+
+  #info { display: flex; flex-wrap: wrap; gap: 1.5vw; margin-top: 3vh; }
+  #info .card { flex: 1 1 22vw; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.6vh 1.4vw;
+    min-width: 0;
+  }
+  .card .lbl { font-size: clamp(12px, 1.2vw, 24px); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .6vh; }
+  .card .val { font-size: var(--info-size, 2vw); white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.3; }
+  #info .card.url { flex-basis: 100%; display: flex; align-items: baseline; gap: 1.5vw; padding: 1vh 1.4vw; }
+  .card.url .lbl { margin-bottom: 0; flex: none; }
+  .card.url .val { min-width: 0; }
+  .card.url .val { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--accent); font-weight: 600; }
+
+  /* ---------- Toolbar ---------- */
+  #toolbar {
+    align-self: center; flex: none;
+    display: flex; gap: 8px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 8px;
+    transition: opacity .3s;
+  }
+  body.idle-mouse #toolbar { opacity: 0; pointer-events: none; }
+  body.idle-mouse { cursor: none; }
+  button {
+    font: inherit; font-size: 14px;
+    background: var(--bg); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 8px;
+    padding: 7px 12px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button.danger { color: var(--danger); }
+  kbd { font-size: 11px; color: var(--muted); margin-left: 4px; }
+
+  /* ---------- Edit panel ---------- */
+  #panel {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 380px;
+    background: var(--card); border-left: 1px solid var(--border);
+    padding: 18px; overflow-y: auto;
+    transform: translateX(100%); transition: transform .2s;
+    z-index: 20;
+  }
+  body.editing #panel { transform: none; }
+  #panel h2 { margin: 0 0 12px; font-size: 18px; display: flex; justify-content: space-between; align-items: center; }
+  #panel h3 { margin: 22px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  #panel label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+  #panel input[type=text], #panel input[type=number], #panel input[type=time], #panel textarea {
+    width: 100%; font: inherit; font-size: 14px;
+    background: var(--bg); color: var(--fg);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 9px;
+  }
+  #panel textarea { resize: vertical; min-height: 60px; }
+  #panel .row { display: flex; gap: 8px; align-items: end; }
+  #panel .row > * { flex: 1; }
+  #panel .row > button { flex: none; }
+  #panel .btns { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  #panel input[type=range] { width: 100%; }
+  #panel .check { display: flex; align-items: center; gap: 8px; color: var(--fg); font-size: 14px; }
+  .note-edit { border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px 10px; margin-top: 10px; background: var(--bg); }
+  .note-edit .row { margin-top: 0; }
+  .note-edit label { margin-top: 6px !important; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 18px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div id="screen">
+  <header>
+    <div>
+      <div id="d-title"></div>
+      <div id="d-subtitle"></div>
+    </div>
+    <div id="d-clock"></div>
+  </header>
+
+  <div id="timer-wrap">
+    <div id="d-timer" class="idle">00:00</div>
+    <div id="progress"><div></div></div>
+    <div id="d-status"></div>
+  </div>
+
+  <div id="info"></div>
+
+<div id="toolbar">
+  <button id="b-start" class="primary">Start <kbd>Space</kbd></button>
+  <button id="b-reset">Reset <kbd>R</kbd></button>
+  <button id="b-minus">−1 min</button>
+  <button id="b-plus">+1 min</button>
+  <button id="b-theme">Light mode <kbd>T</kbd></button>
+  <button id="b-edit">Edit <kbd>E</kbd></button>
+  <button id="b-full">Fullscreen <kbd>F</kbd></button>
+</div>
+</div>
+
+<aside id="panel">
+  <h2>Edit screen <button id="b-close">Close</button></h2>
+
+  <h3>Header</h3>
+  <label for="i-title">Title</label>
+  <input type="text" id="i-title">
+  <label for="i-subtitle">Subtitle</label>
+  <input type="text" id="i-subtitle">
+  <label class="check"><input type="checkbox" id="i-clock"> Show current time</label>
+
+  <h3>Timer</h3>
+  <div class="row">
+    <div>
+      <label for="i-duration">Duration (minutes)</label>
+      <input type="number" id="i-duration" min="1" step="1">
+    </div>
+    <button id="b-apply-dur">Set</button>
+  </div>
+  <div class="row">
+    <div>
+      <label for="i-endtime">…or run until (time of day)</label>
+      <input type="time" id="i-endtime">
+    </div>
+    <button id="b-apply-end">Start until</button>
+  </div>
+  <div class="row">
+    <div>
+      <label for="i-warn">Warn (amber) at min left</label>
+      <input type="number" id="i-warn" min="0">
+    </div>
+    <div>
+      <label for="i-danger">Red at min left</label>
+      <input type="number" id="i-danger" min="0">
+    </div>
+  </div>
+  <label class="check"><input type="checkbox" id="i-progress"> Show progress bar</label>
+
+  <h3>Submission URL</h3>
+  <label for="i-urllabel">Label</label>
+  <input type="text" id="i-urllabel">
+  <label for="i-url">URL</label>
+  <input type="text" id="i-url" placeholder="https://…">
+
+  <h3>Further information</h3>
+  <div id="notes-edit"></div>
+  <div class="btns"><button id="b-add-note">+ Add text block</button></div>
+
+  <h3>Appearance</h3>
+  <label for="i-tsize">Timer size</label>
+  <input type="range" id="i-tsize" min="8" max="32" step="1">
+  <label for="i-isize">Info text size</label>
+  <input type="range" id="i-isize" min="1" max="4" step="0.1">
+
+  <div class="btns" style="margin-top:20px">
+    <button id="b-factory" class="danger">Reset everything</button>
+  </div>
+
+  <div class="hint">
+    Shortcuts: <b>Space</b> start/pause · <b>R</b> reset · <b>F</b> fullscreen · <b>E</b> edit · <b>T</b> light/dark · <b>+/−</b> add/remove a minute.<br>
+    All settings and the running timer are saved in this browser, so reloading the page is safe.
+  </div>
+</aside>
+
+<script>
+const KEY = 'examscreen.v1';
+const DEFAULTS = {
+  title: 'Exam',
+  subtitle: '',
+  showClock: true,
+  durationMin: 50,
+  warnMin: 10,
+  dangerMin: 5,
+  showProgress: true,
+  urlLabel: 'Submit your work here',
+  url: '',
+  notes: [{ label: 'Allowed materials', text: 'None' }],
+  timerSize: 22,
+  infoSize: 2,
+  light: false,
+  // timer state
+  state: 'idle',        // idle | running | paused
+  endAt: null,          // ms timestamp when running
+  remaining: null,      // ms left when paused
+  totalMs: null,        // total length of current run (for progress)
+};
+
+let S;
+try { S = Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(KEY) || '{}')); }
+catch { S = Object.assign({}, DEFAULTS); }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/* ---------- Timer logic ---------- */
+function remainingMs() {
+  if (S.state === 'running') return S.endAt - Date.now();
+  if (S.state === 'paused') return S.remaining;
+  return S.durationMin * 60000;
+}
+function start() {
+  if (S.state === 'running') return;
+  const rem = S.state === 'paused' ? S.remaining : S.durationMin * 60000;
+  if (S.state === 'idle') S.totalMs = rem;
+  S.endAt = Date.now() + rem;
+  S.state = 'running';
+  save(); render();
+}
+function pause() {
+  if (S.state !== 'running') return;
+  S.remaining = S.endAt - Date.now();
+  S.state = 'paused';
+  save(); render();
+}
+function toggle() { S.state === 'running' ? pause() : start(); }
+function reset() {
+  if (S.state === 'running' && !confirm('Timer is running. Reset it?')) return;
+  S.state = 'idle'; S.endAt = null; S.remaining = null; S.totalMs = null;
+  save(); render();
+}
+function addMinutes(n) {
+  const d = n * 60000;
+  if (S.state === 'running') { S.endAt += d; S.totalMs = Math.max(1, (S.totalMs || 0) + d); }
+  else if (S.state === 'paused') { S.remaining += d; S.totalMs = Math.max(1, (S.totalMs || 0) + d); }
+  else { S.durationMin = Math.max(1, S.durationMin + n); $('i-duration').value = S.durationMin; }
+  save(); render();
+}
+function startUntil(hhmm) {
+  if (!hhmm) return;
+  const [h, m] = hhmm.split(':').map(Number);
+  const end = new Date(); end.setHours(h, m, 0, 0);
+  if (end <= new Date()) end.setDate(end.getDate() + 1);
+  const ms = end - Date.now();
+  if (ms > 12 * 3600000 && !confirm('That is more than 12 hours from now. Continue?')) return;
+  S.state = 'running'; S.endAt = end.getTime(); S.totalMs = ms; S.remaining = null;
+  save(); render();
+}
+
+function fmt(ms) {
+  const neg = ms < 0;
+  let s = Math.ceil(Math.abs(ms) / 1000);
+  if (neg) s = Math.floor(Math.abs(ms) / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), sec = s % 60;
+  const p = n => String(n).padStart(2, '0');
+  return (neg ? '+' : '') + (h ? h + ':' + p(m) : p(m)) + ':' + p(sec);
+}
+const hm = d => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+/* ---------- Render ---------- */
+function renderTimer() {
+  const ms = remainingMs();
+  const el = $('d-timer');
+  const over = S.state === 'running' && ms <= 0;
+  el.textContent = over ? "Time's up" : fmt(ms);
+  el.style.fontSize = over ? `calc(${S.timerSize}vw * 0.55)` : '';
+  el.className = '';
+  if (S.state === 'idle') el.classList.add('idle');
+  else if (over) el.classList.add('over');
+  else if (ms <= S.dangerMin * 60000) el.classList.add('danger');
+  else if (ms <= S.warnMin * 60000) el.classList.add('warn');
+
+  const bar = $('progress');
+  bar.style.display = S.showProgress ? '' : 'none';
+  const total = S.state === 'idle' ? S.durationMin * 60000 : (S.totalMs || 1);
+  const frac = Math.max(0, Math.min(1, ms / total));
+  bar.firstElementChild.style.width = (frac * 100) + '%';
+  bar.firstElementChild.style.background =
+    ms <= S.dangerMin * 60000 ? 'var(--danger)' : ms <= S.warnMin * 60000 ? 'var(--warn)' : 'var(--accent)';
+
+  let status = '';
+  if (S.state === 'running') status = over ? 'Please stop working and submit now.' : 'Ends at ' + hm(new Date(S.endAt));
+  else if (S.state === 'paused') status = 'Paused';
+  else status = 'Duration: ' + S.durationMin + ' min';
+  $('d-status').textContent = status;
+
+  $('b-start').innerHTML = (S.state === 'running' ? 'Pause' : S.state === 'paused' ? 'Resume' : 'Start') + ' <kbd>Space</kbd>';
+  $('d-clock').textContent = S.showClock ? hm(new Date()) : '';
+}
+
+function render() {
+  document.body.classList.toggle('light', !!S.light);
+  $('b-theme').innerHTML = (S.light ? 'Dark mode' : 'Light mode') + ' <kbd>T</kbd>';
+  document.documentElement.style.setProperty('--timer-size', S.timerSize + 'vw');
+  document.documentElement.style.setProperty('--info-size', S.infoSize + 'vw');
+  $('d-title').textContent = S.title;
+  $('d-subtitle').textContent = S.subtitle;
+  $('d-subtitle').style.display = S.subtitle ? '' : 'none';
+
+  let html = '';
+  if (S.url.trim()) html += `<div class="card url"><div class="lbl">${esc(S.urlLabel)}</div><div class="val">${esc(S.url)}</div></div>`;
+  for (const n of S.notes) {
+    if (!n.label.trim() && !n.text.trim()) continue;
+    html += `<div class="card">${n.label ? `<div class="lbl">${esc(n.label)}</div>` : ''}<div class="val">${esc(n.text)}</div></div>`;
+  }
+  $('info').innerHTML = html;
+  renderTimer();
+}
+
+/* ---------- Edit panel ---------- */
+function bindText(id, key, after) {
+  const el = $(id);
+  el.value = S[key];
+  el.addEventListener('input', () => { S[key] = el.value; save(); render(); after && after(); });
+}
+function bindNum(id, key) {
+  const el = $(id);
+  el.value = S[key];
+  el.addEventListener('input', () => { const v = parseFloat(el.value); if (!isNaN(v)) { S[key] = v; save(); render(); } });
+}
+function bindCheck(id, key) {
+  const el = $(id);
+  el.checked = !!S[key];
+  el.addEventListener('change', () => { S[key] = el.checked; save(); render(); });
+}
+
+function renderNotesEditor() {
+  const box = $('notes-edit');
+  box.innerHTML = '';
+  S.notes.forEach((n, i) => {
+    const d = document.createElement('div');
+    d.className = 'note-edit';
+    d.innerHTML = `
+      <div class="row">
+        <div><label>Label</label><input type="text" data-k="label"></div>
+        <button title="Move up" data-a="up">↑</button>
+        <button title="Remove" data-a="del" class="danger">✕</button>
+      </div>
+      <label>Text</label><textarea data-k="text"></textarea>`;
+    d.querySelector('[data-k=label]').value = n.label;
+    d.querySelector('[data-k=text]').value = n.text;
+    d.querySelectorAll('[data-k]').forEach(inp =>
+      inp.addEventListener('input', () => { n[inp.dataset.k] = inp.value; save(); render(); }));
+    d.querySelector('[data-a=del]').onclick = () => { S.notes.splice(i, 1); save(); render(); renderNotesEditor(); };
+    d.querySelector('[data-a=up]').onclick = () => {
+      if (i === 0) return;
+      [S.notes[i - 1], S.notes[i]] = [S.notes[i], S.notes[i - 1]];
+      save(); render(); renderNotesEditor();
+    };
+    box.appendChild(d);
+  });
+}
+
+bindText('i-title', 'title');
+bindText('i-subtitle', 'subtitle');
+bindCheck('i-clock', 'showClock');
+bindNum('i-warn', 'warnMin');
+bindNum('i-danger', 'dangerMin');
+bindCheck('i-progress', 'showProgress');
+bindText('i-urllabel', 'urlLabel');
+bindText('i-url', 'url');
+bindNum('i-tsize', 'timerSize');
+bindNum('i-isize', 'infoSize');
+$('i-duration').value = S.durationMin;
+
+$('b-apply-dur').onclick = () => {
+  const v = parseInt($('i-duration').value, 10);
+  if (!(v > 0)) return;
+  if (S.state !== 'idle' && !confirm('This resets the current timer. Continue?')) return;
+  S.durationMin = v; S.state = 'idle'; S.endAt = null; S.remaining = null; S.totalMs = null;
+  save(); render();
+};
+$('i-duration').addEventListener('keydown', e => { if (e.key === 'Enter') $('b-apply-dur').click(); });
+$('b-apply-end').onclick = () => startUntil($('i-endtime').value);
+$('b-add-note').onclick = () => { S.notes.push({ label: '', text: '' }); save(); render(); renderNotesEditor(); };
+$('b-factory').onclick = () => {
+  if (!confirm('Reset all texts, settings and the timer?')) return;
+  try { localStorage.removeItem(KEY); } catch {}
+  location.reload();
+};
+renderNotesEditor();
+
+/* ---------- Toolbar & keys ---------- */
+const toggleEdit = () => document.body.classList.toggle('editing');
+function toggleFull() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(() => {});
+}
+$('b-start').onclick = toggle;
+$('b-reset').onclick = reset;
+$('b-plus').onclick = () => addMinutes(1);
+$('b-minus').onclick = () => addMinutes(-1);
+$('b-edit').onclick = toggleEdit;
+$('b-close').onclick = toggleEdit;
+$('b-full').onclick = toggleFull;
+const toggleTheme = () => { S.light = !S.light; save(); render(); };
+$('b-theme').onclick = toggleTheme;
+document.addEventListener('fullscreenchange', () => {
+  $('b-full').innerHTML = (document.fullscreenElement ? 'Exit fullscreen' : 'Fullscreen') + ' <kbd>F</kbd>';
+});
+
+document.addEventListener('keydown', e => {
+  const t = e.target.tagName;
+  if (t === 'INPUT' || t === 'TEXTAREA') { if (e.key === 'Escape') e.target.blur(); return; }
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  switch (e.key) {
+    case ' ': e.preventDefault(); toggle(); break;
+    case 'r': case 'R': reset(); break;
+    case 'f': case 'F': toggleFull(); break;
+    case 'e': case 'E': toggleEdit(); break;
+    case 't': case 'T': toggleTheme(); break;
+    case '+': case '=': addMinutes(1); break;
+    case '-': addMinutes(-1); break;
+    case 'Escape': document.body.classList.remove('editing'); break;
+  }
+});
+
+// Hide toolbar & cursor after 3 s without mouse movement (unless editing)
+let idleT;
+function wake() {
+  document.body.classList.remove('idle-mouse');
+  clearTimeout(idleT);
+  idleT = setTimeout(() => {
+    if (!document.body.classList.contains('editing') && !$('toolbar').matches(':hover'))
+      document.body.classList.add('idle-mouse');
+  }, 3000);
+}
+['mousemove', 'mousedown', 'keydown', 'touchstart'].forEach(ev => document.addEventListener(ev, wake));
+wake();
+
+render();
+setInterval(renderTimer, 250);
+</script>
+</body>
+</html>

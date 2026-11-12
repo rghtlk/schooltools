@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5f4ef" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16181c" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Classbook">
+<title>Classbook</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="/style.css">
+<script type="module" src="/js/app.js"></script>
+</head>
+<body>
+<main id="main"><p class="loading">Loading…</p></main>
+<div id="sheet"></div>
+<div id="modal"></div>
+<div id="update"></div>
+<div id="reason"></div>
+<div id="toast" aria-live="polite"></div>
+<noscript>Classbook needs JavaScript.</noscript>
+<script>
+  // If the app has not started after a while, say so instead of "Loading…" for ever.
+  setTimeout(function () {
+    if (window.__classbookStarted) return;
+    var main = document.getElementById('main');
+    main.innerHTML = '<div class="page"><h1>Classbook did not start</h1>'
+      + '<p>The app could not be loaded on this device. Reload once — if that does not help, open it while connected to your computer.</p>'
+      + '<p><button class="primary" onclick="location.reload()">Reload</button></p></div>';
+  }, 8000);
+</script>
+</body>
+</html>

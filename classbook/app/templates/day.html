@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ course.name }} — {{ day_label }}</title>
+<link rel="stylesheet" href="{{ asset_base }}/vendor/katex/katex.min.css">
+<style>
+  :root { --ink:#1a1a1a; --muted:#666; --line:#d8d8d8; --accent:{{ course.color }}; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Charter","Georgia","Times New Roman",serif;
+    color: var(--ink); font-size: 10.5pt; line-height: 1.45; margin: 0;
+  }
+  h1 { font-size: 19pt; margin: 0 0 2mm; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 10pt; margin: 0; }
+  header { border-bottom: 3px solid var(--accent); padding-bottom: 4mm; margin-bottom: 5mm; }
+  .meta { display: flex; flex-wrap: wrap; gap: 2mm 8mm; margin-top: 3mm; font-size: 9.5pt; }
+  .meta div { color: var(--muted); }
+  .meta b { color: var(--ink); font-weight: 600; }
+
+  .hour { page-break-inside: avoid; margin: 0 0 6mm; }
+  .hour-head { display: flex; align-items: baseline; gap: 2mm;
+               border-bottom: 1.5px solid var(--accent); padding-bottom: 1mm;
+               margin-bottom: 2.5mm; }
+  .hour-n { font-size: 12pt; font-weight: 700; }
+  .hour-when { font-size: 9.5pt; color: var(--muted);
+               font-variant-numeric: tabular-nums; }
+  .spacer { flex: 1; }
+  .badge { display: inline-block; font-size: 7.5pt; text-transform: uppercase;
+           letter-spacing: 0.05em; padding: 0.3mm 1.5mm; border-radius: 2px;
+           border: 1px solid var(--accent); color: var(--accent);
+           font-family: system-ui, sans-serif; font-weight: 600; }
+  .topic { page-break-inside: avoid; margin: 0 0 4mm; padding-left: 4mm;
+           border-left: 2px solid var(--line); }
+  .topic h3 { font-size: 11pt; margin: 0 0 1.5mm; }
+  .no-topic { color: #999; font-style: italic; padding-left: 4mm; }
+  .no-notes { color: #999; font-style: italic; font-size: 9.5pt; }
+
+  .body p:first-child { margin-top: 0; }
+  .body :is(p,ul,ol) { margin: 1.5mm 0; }
+  .body code { font-family: "SF Mono",Menlo,monospace; font-size: 9pt;
+               background: #f4f4f4; padding: 0 1mm; border-radius: 2px; }
+  .body pre { background: #f6f6f6; padding: 2mm 3mm; border-radius: 3px;
+              overflow-x: auto; font-size: 8.5pt; }
+  .body blockquote { margin: 2mm 0; padding-left: 3mm;
+                     border-left: 2px solid var(--line); color: #555; }
+  .body table { border-collapse: collapse; font-size: 9pt; margin: 2mm 0; }
+  .body th, .body td { border: 1px solid var(--line); padding: 1mm 2mm; }
+  .body img { max-width: 100%; }
+  footer { margin-top: 8mm; padding-top: 2mm; border-top: 1px solid var(--line);
+           font-size: 8.5pt; color: var(--muted); }
+
+  /* On screen the sheet gets a page-like frame and day-to-day navigation;
+     both disappear when this very page is printed or rendered to PDF. */
+  {% if not for_print %}
+  body { background: #eceae6; padding: 8mm 4mm; }
+  .sheet { background: #fff; max-width: 190mm; margin: 0 auto; padding: 12mm 14mm;
+           box-shadow: 0 1px 3px rgba(0,0,0,.14); border-radius: 3px; }
+  .nav { display: flex; gap: 3mm; align-items: center; max-width: 190mm;
+         margin: 0 auto 4mm; font-family: system-ui, sans-serif; font-size: 9.5pt; }
+  .nav a { color: #fff; background: var(--accent); text-decoration: none;
+           padding: 1.6mm 3mm; border-radius: 3px; }
+  .nav a.ghost { background: #fff; color: var(--ink); border: 1px solid #c9c6c0; }
+  .nav .off { color: #999; padding: 1.6mm 0; }
+  @media print {
+    body { background: #fff; padding: 0; }
+    .sheet { box-shadow: none; max-width: none; padding: 0; border-radius: 0; }
+    .nav { display: none; }
+  }
+  {% endif %}
+</style>
+</head>
+<body>
+
+{% if not for_print %}
+<div class="nav">
+  {% if prev_day %}<a class="ghost" href="{{ base_path }}/{{ prev_day }}">&larr; {{ prev_label }}</a>
+  {% else %}<span class="off">&larr; first teaching day</span>{% endif %}
+  <span class="spacer"></span>
+  <a href="{{ base_path }}/{{ day }}/pdf">Download PDF</a>
+  <span class="spacer"></span>
+  {% if next_day %}<a class="ghost" href="{{ base_path }}/{{ next_day }}">{{ next_label }} &rarr;</a>
+  {% else %}<span class="off">last teaching day &rarr;</span>{% endif %}
+</div>
+<div class="sheet">
+{% endif %}
+
+<header>
+  <h1>{{ day_label }}</h1>
+  <p class="sub">
+    {{ course.name }}{% if course.class_name %} &middot; {{ course.class_name }}{% endif %}
+    &middot; {{ year.name }}
+  </p>
+  <div class="meta">
+    <div><b>{{ hours | length }}</b> teaching hour{{ '' if hours | length == 1 else 's' }}{%
+      if planned_hours != hours | length %} &middot; {{ planned_hours }} with a topic{% endif %}</div>
+    {% if course.teacher %}<div><b>Teacher</b> {{ course.teacher }}</div>{% endif %}
+    {% if course.room %}<div><b>Room</b> {{ course.room }}</div>{% endif %}
+  </div>
+</header>
+
+{% for h in hours %}
+<div class="hour">
+  <div class="hour-head">
+    <span class="hour-n">Hour {{ h.hour }}</span>
+    {% if h.start_time %}<span class="hour-when">{{ h.start_time }}</span>{% endif %}
+    <span class="spacer"></span>
+    {% if h.source == 'extra' %}<span class="badge">{{ h.note or 'extra session' }}</span>{% endif %}
+  </div>
+
+  {% if not h.topics %}
+  <p class="no-topic">No topic assigned to this hour.</p>
+  {% else %}
+    {% for tp in h.topics %}
+  <div class="topic">
+    <h3>{{ tp.title }}</h3>
+    {% if tp.body_html %}<div class="body">{{ tp.body_html|safe }}</div>
+    {% else %}<p class="no-notes">No notes yet.</p>{% endif %}
+  </div>
+    {% endfor %}
+  {% endif %}
+</div>
+{% endfor %}
+
+<footer>{{ course.name }}{% if course.class_name %} — {{ course.class_name }}{% endif %}
+  &middot; {{ year.name }} &middot; {{ day_label }} &middot; generated {{ generated }}</footer>
+
+{% if not for_print %}</div>{% endif %}
+
+<script src="{{ asset_base }}/vendor/katex/katex.min.js"></script>
+<script src="{{ asset_base }}/vendor/katex/auto-render.min.js"></script>
+<script>
+  (function () {
+    function done() { window.__mathReady = true; }
+    try {
+      renderMathInElement(document.body, {
+        delimiters: [
+          { left: "\\[", right: "\\]", display: true },
+          { left: "\\(", right: "\\)", display: false }
+        ],
+        throwOnError: false
+      });
+    } catch (e) { /* KaTeX missing: leave the raw TeX visible */ }
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(done);
+    } else { done(); }
+  })();
+</script>
+</body>
+</html>
